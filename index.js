@@ -66,7 +66,7 @@ async function main() {
       flowControl: {
         maxMessages: 1,
       },
-      // maxConnections: 1,
+      maxConnections: 1,
     });
 
     jobSubscription.on('message', async message => {
@@ -75,10 +75,10 @@ async function main() {
       const latency = new Date(message.received).getTime() - new Date(message.publishTime).getTime();
       console.log(`SUBSCRIBER: ${jobId}/${message.id}: Received job, message latency: ${latency.toLocaleString()}ms`);
 
-      // console.log(`SUBSCRIBER: ${jobId}/${message.id}: Processing job (${JOB_PROCESS_DURATION.toLocaleString()}ms delay)`);
+      console.log(`SUBSCRIBER: ${jobId}/${message.id}: Processing job (${JOB_PROCESS_DURATION.toLocaleString()}ms delay)`);
       await delay(JOB_PROCESS_DURATION);
 
-      // console.log(`SUBSCRIBER: ${jobId}/${message.id}: Finished, ACKing`);
+      console.log(`SUBSCRIBER: ${jobId}/${message.id}: Finished, ACKing`);
       message.ack();
     });
 
