@@ -1,3 +1,4 @@
+const _ = require('lodash');
 const PubSub = require('@google-cloud/pubsub');
 const shortid = require('shortid');
 
@@ -10,6 +11,8 @@ const JOB_SUBSCRIPTION = 'gcp-pubsub-test-job-subscription';
 
 const JOB_CREATE_INTERVAL = 1000;
 const JOB_PROCESS_DURATION = JOB_CREATE_INTERVAL * 2;
+
+const NUM_SUBSCRIBERS = 4;
 
 const STATUS_PREFIX = 'gcp-pubsub-test-status';
 
@@ -62,24 +65,26 @@ async function main() {
   } else if (mode === 'subscriber') {
     console.log('SUBSCRIBER: Running');
 
-    const jobSubscription = await getSubscription(jobTopic, JOB_SUBSCRIPTION, {
-      flowControl: {
-        maxMessages: 1,
-      },
-      maxConnections: 1,
-    });
+    _.each(_.range(0, NUM_SUBSCRIBERS), async subId => {
+      const jobSubscription = await getSubscription(jobTopic, JOB_SUBSCRIPTION, {
+        flowControl: {
+          maxMessages: 1,
+        },
+        maxConnections: 1,
+      });
 
-    jobSubscription.on('message', async message => {
-      const data = JSON.parse(message.data.toString('utf8'));
-      const { jobId } = data;
-      const latency = new Date(message.received).getTime() - new Date(message.publishTime).getTime();
-      console.log(`SUBSCRIBER: ${jobId}/${message.id}: Received job, message latency: ${latency.toLocaleString()}ms`);
+      jobSubscription.on('message', async message => {
+        const data = JSON.parse(message.data.toString('utf8'));
+        const { jobId } = data;
+        const latency = new Date(message.received).getTime() - new Date(message.publishTime).getTime();
+        console.log(`SUBSCRIBER ${subId + 1}: ${jobId}/${message.id}: Received job, message latency: ${latency.toLocaleString()}ms`);
 
-      console.log(`SUBSCRIBER: ${jobId}/${message.id}: Processing job (${JOB_PROCESS_DURATION.toLocaleString()}ms delay)`);
-      await delay(JOB_PROCESS_DURATION);
+        // console.log(`SUBSCRIBER ${subId + 1}: ${jobId}/${message.id}: Processing job (${JOB_PROCESS_DURATION.toLocaleString()}ms delay)`);
+        await delay(JOB_PROCESS_DURATION);
 
-      console.log(`SUBSCRIBER: ${jobId}/${message.id}: Finished, ACKing`);
-      message.ack();
+        // console.log(`SUBSCRIBER ${subId + 1}: ${jobId}/${message.id}: Finished, ACKing`);
+        message.ack();
+      });
     });
 
   } else {
